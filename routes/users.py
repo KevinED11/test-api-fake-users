@@ -33,15 +33,16 @@ def get_cached_users() -> list[User]:
     return list(create_fake_users(500, Faker()))
 
 
-def get_user_by_id(id: int, users: list[User]) -> Generator[User, None, None]:
-    return (user for user in users if user.id == id)
+def get_user_by_id(id: int, users: list[User]) -> User:
+    return next((user for user in users if user.id == id), None)
 
 
-def get_user(id: int, users: list[User] = Depends(get_cached_users)) -> User:
-    user: list[User] = list(get_user_by_id(id, users))
+
+def get_user(id: int = 1, users: list[User] = Depends(get_cached_users)) -> User:
+    user: list[User] = get_user_by_id(id, users)
     if not user:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
-    return user[0]
+    return user
 
 
 @router_users.get("/", response_model=list[User])
@@ -61,8 +62,10 @@ async def read_user_filtered(
     ] = None,
     users: list[User] = Depends(get_cached_users),
 ):
-    if user := [user for user in users if user.name == name or user.email == email]:
-        return user
+    if filtered_users := [
+        user for user in users if user.name == name or user.email == email
+    ]:
+        return filtered_users
 
     raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -96,6 +99,7 @@ async def delete_user(
 ):
     print(user_to_delete)
     users.remove(user_to_delete)
+
     return Response(status_code=HTTP_204_NO_CONTENT)
 
 
@@ -111,7 +115,6 @@ async def update_user(
     new_data: User,
     user_to_update: User = Depends(get_user),
 ):
-    print(user_to_update)
     user: User = user_to_update
     for key, value in new_data.dict(exclude_unset=True).items():
         setattr(user, key, value)
