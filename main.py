@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from dotenv import load_dotenv
 from uvicorn import run as uvicorn_run
-from fastapi.testclient import TestClient
 
 load_dotenv()
 
