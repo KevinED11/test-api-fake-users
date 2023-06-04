@@ -37,7 +37,6 @@ def get_user_by_id(id: int, users: list[User]) -> User:
     return next((user for user in users if user.id == id), None)
 
 
-
 def get_user(id: int = 1, users: list[User] = Depends(get_cached_users)) -> User:
     user: list[User] = get_user_by_id(id, users)
     if not user:
@@ -47,9 +46,10 @@ def get_user(id: int = 1, users: list[User] = Depends(get_cached_users)) -> User
 
 @router_users.get("/", response_model=list[User])
 async def read_users(
-    offset: int = 0, limit: int = 50, users: list[User] = Depends(get_cached_users)
+    offset: int = 0, limit: Annotated[int, Query(title="limit of users to return" ,ge=5)] = 10, 
+    users: list[User] = Depends(get_cached_users)
 ):
-    return users[offset : limit + offset]
+    return users[offset : offset + limit]
 
 
 @router_users.get("/filtered/", response_model=list[User])
