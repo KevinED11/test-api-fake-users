@@ -17,7 +17,7 @@ router_users = APIRouter(tags=["Users"], prefix="/users")
 
 
 def generate_password(lenght: int = 12) -> str:
-    charset = ascii_letters+digits+punctuation
+    charset = ascii_letters + digits + punctuation
     return "".join([choice(charset) for _ in range(lenght)])
 
 
@@ -27,10 +27,11 @@ def create_fake_users(number: int) -> Generator[User, None, None]:
         User(
             id=i,
             name=faker.name(),
+            username=faker.user_name(),
             email=faker.email(),
             address=faker.address(),
             phone=faker.phone_number(),
-            password=generate_password(),
+            password=generate_password(lenght=14),
             disabled=False,
         )
         for i in range(1, number + 1)
@@ -46,12 +47,15 @@ def get_user_by_id(id: int, users: list[User]) -> User:
     return next((user for user in users if user.id == id), None)
 
 
+def get_user_by_username(username: str, users: list[User]) -> User:
+    return next((user for user in users if user.username == username), None)
+
+
 async def get_user(id: int = 1, users: list[User] = Depends(get_cached_users)) -> User:
     user: User = get_user_by_id(id, users)
     if not user:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
     return user
-
 
 
 @router_users.get("/", response_model=list[User])
@@ -71,10 +75,13 @@ async def read_user_filtered(
     email: Annotated[
         str | None, Query(title="The email of te user", min_length=4, max_length=50)
     ] = None,
+    username: Annotated[str, Query(title="The username of the user")] = None,
     users: list[User] = Depends(get_cached_users),
 ):
     if filtered_users := [
-        user for user in users if user.name == name or user.email == email
+        user
+        for user in users
+        if user.name == name or user.email == email or user.username == username
     ]:
         return filtered_users
 
