@@ -5,7 +5,7 @@ from uvicorn import run as uvicorn_run
 load_dotenv()
 
 from routes.users import router_users
-
+from auth.login import login
 
 app = FastAPI()
 
@@ -16,7 +16,7 @@ async def read_root():
 
 
 app.include_router(router=router_users)
-
+app.include_router(router=login)
 
 if __name__ == "__main__":
     uvicorn_run(app=app, host="localhost", port=8000)  # run server

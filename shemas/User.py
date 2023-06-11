@@ -6,3 +6,5 @@ class User(BaseModel):
     email: EmailStr = Field(example="jhon@gmail.com")
     address: str = Field(example="123 Main St")
     phone: str = Field(example="000000000000")
+    password: str = Field(example="password")
+    disabled: bool

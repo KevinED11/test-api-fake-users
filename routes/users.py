@@ -10,12 +10,19 @@ from typing import Annotated
 from faker import Faker
 from functools import lru_cache
 from typing import Generator
-
+from string import ascii_letters, digits, punctuation
+from secrets import choice
 
 router_users = APIRouter(tags=["Users"], prefix="/users")
 
 
-def create_fake_users(number: int, faker: Faker) -> Generator[User, None, None]:
+def generate_password(lenght: int = 12) -> str:
+    charset = ascii_letters+digits+punctuation
+    return "".join([choice(charset) for _ in range(lenght)])
+
+
+def create_fake_users(number: int) -> Generator[User, None, None]:
+    faker: Faker = Faker()
     return (
         User(
             id=i,
@@ -23,6 +30,8 @@ def create_fake_users(number: int, faker: Faker) -> Generator[User, None, None]:
             email=faker.email(),
             address=faker.address(),
             phone=faker.phone_number(),
+            password=generate_password(),
+            disabled=False,
         )
         for i in range(1, number + 1)
     )
@@ -30,24 +39,26 @@ def create_fake_users(number: int, faker: Faker) -> Generator[User, None, None]:
 
 @lru_cache(maxsize=1000)
 def get_cached_users() -> list[User]:
-    return list(create_fake_users(500, Faker()))
+    return list(create_fake_users(500))
 
 
 def get_user_by_id(id: int, users: list[User]) -> User:
     return next((user for user in users if user.id == id), None)
 
 
-def get_user(id: int = 1, users: list[User] = Depends(get_cached_users)) -> User:
-    user: list[User] = get_user_by_id(id, users)
+async def get_user(id: int = 1, users: list[User] = Depends(get_cached_users)) -> User:
+    user: User = get_user_by_id(id, users)
     if not user:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="User not found")
     return user
 
 
+
 @router_users.get("/", response_model=list[User])
 async def read_users(
-    offset: int = 0, limit: Annotated[int, Query(title="limit of users to return" ,ge=5)] = 10, 
-    users: list[User] = Depends(get_cached_users)
+    offset: int = 0,
+    limit: Annotated[int, Query(title="limit of users to return", ge=5)] = 10,
+    users: list[User] = Depends(get_cached_users),
 ):
     return users[offset : offset + limit]
 
